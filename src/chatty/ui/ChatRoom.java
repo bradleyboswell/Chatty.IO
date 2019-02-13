@@ -44,7 +44,7 @@ public class ChatRoom extends Application{
 			
 		//Formatting JFx
 		chats.setPrefHeight(600);		
-		VBox rootPanel = new VBox(20, chats, userIn);		
+		VBox rootPanel = new VBox(20, chats, userIn);
 		rootPanel.setPrefSize(600,600);
 		return rootPanel;	
 	}
@@ -100,6 +100,7 @@ public class ChatRoom extends Application{
 	@Override
 	public void start(Stage pStage) throws Exception {
 		pStage.setScene(new Scene(create()));
+		pStage.setTitle(isServer ? "Server" : "Client");
 		pStage.show();		
 	}
 	
