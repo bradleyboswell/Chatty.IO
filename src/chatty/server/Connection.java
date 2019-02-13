@@ -36,7 +36,7 @@ public abstract class Connection {
 	public void close() throws Exception {
 		connection.socket.close();  //closes a connection
 	}
-
+  
 	protected abstract String getIpAddress();   //Used to find server and connect
 	protected abstract int getPortNum(); //Get the port number for connection
 	protected abstract boolean isServer();   //Check if connection is client or server

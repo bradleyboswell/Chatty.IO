@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 public class NewServer extends Connection {
 
 	private int portNum;  //port number to listen to incoming connections
-	
+	 
 	
 	public NewServer(int portNum, Consumer<Serializable> onCall) {
 		super(onCall);

@@ -15,7 +15,7 @@ public class NewClient extends Connection {
 		this.ipAddress = ipAddress;
 		this.portNum = portNum;
 	}
-
+ 
 	@Override
 	protected String getIpAddress() {
 		return ipAddress;
