@@ -100,7 +100,7 @@ public class ChatRoom extends Application{
 	@Override
 	public void start(Stage pStage) throws Exception {
 		pStage.setScene(new Scene(create()));
-		pStage.setTitle(isServer ? "Server" : "Client");
+		pStage.setTitle(isServer ? "Server" : "Client"); //temporary
 		pStage.show();		
 	}
 	
