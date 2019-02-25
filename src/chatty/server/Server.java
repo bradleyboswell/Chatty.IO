@@ -16,16 +16,18 @@ public class Server implements Runnable {
 	private int sPort;
 	private Socket socket;
 	private PrintWriter cOutput = null;
+	private String user;
 
-	public Server(int port) {
+	public Server(int port) { //mainServer
 		this.sPort = port;
 	}
-	public Server(Socket socket) {
+	public Server(Socket socket, String user) { //thread for each socket
 		this.socket = socket;
-		connectedClients.add(this);
+		this.user = user;
+		
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		Server mainServer = new Server(servPort);
 		mainServer.launch();
 	}
@@ -33,18 +35,23 @@ public class Server implements Runnable {
 	@Override
 	public void run() {
 		try {
-			cOutput = new PrintWriter(socket.getOutputStream(),false);
-			Scanner sc = new Scanner(socket.getInputStream());
+			System.out.println("Connected: " + this.socket.getRemoteSocketAddress());
 
+			cOutput = new PrintWriter(this.socket.getOutputStream(),false);
+			Scanner sc = new Scanner(this.socket.getInputStream());
+			while(!sc.hasNext()) {
+			this.user = sc.nextLine();
+			}
+			System.out.println("Username: " + this.user);
 
-			while(!socket.isClosed()) {
+			while(!this.socket.isClosed()) {
 				if(sc.hasNextLine()) {
 					String in = sc.nextLine();
 
 					Server.getConnectedClients().forEach(Server->{
 						PrintWriter cOut = Server.getWriter();
 						if(cOut != null) {
-							cOut.write(in + "\r\n");
+							cOut.write(Server.user + ": " + in + "\r\n");
 							cOut.flush();
 						}
 					});
@@ -52,7 +59,7 @@ public class Server implements Runnable {
 				}
 			}
 
-			System.out.println("socket " + socket.getLocalPort() + " is closed");
+			System.out.println("client with socket " + this.socket.getLocalPort() + " is closed");
 
 			sc.close();
 		} catch (IOException e) {	
@@ -61,7 +68,7 @@ public class Server implements Runnable {
 		}
 	}
 
-	private PrintWriter getWriter() {
+	public PrintWriter getWriter() {
 
 		return cOutput;
 	}
@@ -71,7 +78,7 @@ public class Server implements Runnable {
 		return connectedClients;
 	}
 
-	public void launch() {
+	public void launch() throws InterruptedException {
 		connectedClients = new ArrayList<Server>();
 		try {
 			ServerSocket sSocket = new ServerSocket(sPort);
@@ -80,6 +87,7 @@ public class Server implements Runnable {
 			System.out.println("can't bind to socket: " + sPort);
 			e.printStackTrace();
 		}
+		
 
 	}
 
@@ -88,8 +96,11 @@ public class Server implements Runnable {
 		while(true) {
 			try {
 				Socket socket = sSocket.accept();
-				Server newClientThread = new Server(socket); 
+				user = "temp";
+				Server newClientThread = new Server(socket, user); 
+				connectedClients.add(newClientThread);
 				newClientThread.run();
+				
 
 			} catch (IOException e) {
 				System.out.println("Failed to accept client on port: " + sSocket.getLocalPort());
