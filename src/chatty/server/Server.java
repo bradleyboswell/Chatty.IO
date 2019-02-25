@@ -1,63 +1,107 @@
 package chatty.server;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Scanner;
 
-import chatty.client.CThread;
+public class Server implements Runnable {
 
-public class Server {
-	public static final int portnum = 3000;
+	public static final int servPort = 1500;
+
+	private static ArrayList<Server> connectedClients;
 	
-	public int sPort;
-	public List<CThread> connectedClients;    //List to hold threads for connected clients on the server
-	
-	
+	private int sPort;
+	private Socket socket;
+	private PrintWriter cOutput = null;
+
 	public Server(int port) {
 		this.sPort = port;
 	}
-	
-	public void launch() {
-		ServerSocket sSocket = null;
-		connectedClients = new ArrayList<CThread>();
+	public Server(Socket socket) {
+		this.socket = socket;
+		connectedClients.add(this);
+	}
+
+	public static void main(String[] args) {
+		Server mainServer = new Server(servPort);
+		mainServer.launch();
+	}
+
+	@Override
+	public void run() {
 		try {
-			sSocket = new ServerSocket(sPort);
-			clientSearch(sSocket);
-		}catch(IOException ex) {
-			System.out.println("Failed to listen on Port: "+sPort);
-			System.exit(1);
+			cOutput = new PrintWriter(socket.getOutputStream(),false);
+			Scanner sc = new Scanner(socket.getInputStream());
+
+
+			while(!socket.isClosed()) {
+				if(sc.hasNextLine()) {
+					String in = sc.nextLine();
+
+					Server.getConnectedClients().forEach(Server->{
+						PrintWriter cOut = Server.getWriter();
+						if(cOut != null) {
+							cOut.write(in + "\r\n");
+							cOut.flush();
+						}
+					});
+
+				}
+			}
+
+			System.out.println("socket " + socket.getLocalPort() + " is closed");
+
+			sc.close();
+		} catch (IOException e) {	
+			System.out.println("Error sending data...");
+			e.printStackTrace();
 		}
 	}
-	
-	
-	//Continuously poll for incoming clients on the server
+
+	private PrintWriter getWriter() {
+
+		return cOutput;
+	}
+
+	public static ArrayList<Server> getConnectedClients() {
+
+		return connectedClients;
+	}
+
+	public void launch() {
+		connectedClients = new ArrayList<Server>();
+		try {
+			ServerSocket sSocket = new ServerSocket(sPort);
+			clientSearch(sSocket);
+		} catch (IOException e) {
+			System.out.println("can't bind to socket: " + sPort);
+			e.printStackTrace();
+		}
+
+	}
+
 	public void clientSearch(ServerSocket sSocket) {
-		
 		System.out.println("Server Started Port: " + sSocket.getLocalSocketAddress());
 		while(true) {
 			try {
 				Socket socket = sSocket.accept();
-				CThread newclient = new CThread(socket,this);
-				Thread newthread = new Thread(newclient);
-				newthread.start();
-				connectedClients.add(newclient);
-				System.out.println(connectedClients.size());
-				//System.out.println("New client accepted!");
-			}catch (IOException ex) {
-				System.out.println("Failed to accept the client on port number:" + sSocket.getLocalPort());
+				Server newClientThread = new Server(socket); 
+				newClientThread.run();
+
+			} catch (IOException e) {
+				System.out.println("Failed to accept client on port: " + sSocket.getLocalPort());
+				e.printStackTrace();
 			}
+
+
 		}
+
 	}
-	
-	public List<CThread> getConnectedClients(){
-		return this.connectedClients;
-	}
-	
-	public static void main(String[] args) {
-		Server server = new Server(portnum);
-		server.launch();
-	}
+
+
+
 
 }
