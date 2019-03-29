@@ -7,7 +7,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-public class Client {
+public class client2 {
 
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException {
 
@@ -17,14 +17,14 @@ public class Client {
 		OutputStreamWriter bw = new OutputStreamWriter(socket.getOutputStream());
 		BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		Thread.sleep(4000);
-		System.out.println("Writing hello to stream");
-		bw.write("hello\n");
-		bw.write("blah\n");
-//		bw.flush();
+		System.out.println("client 2 writing to stream");
+		bw.write("asdf\n");
+		bw.write("fds\n");
+		bw.flush();
 		Thread.sleep(1000);
 		while(true) {
 		Thread.sleep(500);
-		System.out.println("checking for messages...");
+		System.out.println("client 2 checking messages...");
 		if(br.ready()) {
 		System.out.println(br.readLine());
 		}
