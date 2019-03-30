@@ -18,6 +18,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -109,9 +110,37 @@ public class ChatRoom extends Application{
 		return login;
 	}
 	
-	private Parent create() {
-		TextField userIn = new TextField();     //input for chat
-		userIn.setOnAction(ev -> {			//Send message to server
+	private Parent createChat() {
+		HBox inputPane = new HBox();
+		VBox chatWindow = new VBox(10, chats, inputPane);
+		
+		TextField userIn = new TextField(); // input for chat
+
+		chats.setEditable(false);
+		chats.setPrefHeight(500);
+		chats.setFocusTraversable(false);
+
+		Button sendButton = new Button("Send");
+		
+		sendButton.setOnAction(new EventHandler<ActionEvent>() { // send message to server using button
+			public void handle(ActionEvent e) {
+				String message = username + ": ";
+				message += userIn.getText();
+				userIn.clear();
+				
+				chats.appendText(message + "\n");
+				
+				try {
+					connection.send(message);
+				} 
+				catch (Exception ex) {
+					chats.appendText("Message could not be delivered at this time...\n");
+					ex.printStackTrace();
+				}
+			}
+		});
+		
+		userIn.setOnAction(ev -> { // send message to server using keyboard
 			String message = username + ": ";
 			message += userIn.getText();
 			userIn.clear();
@@ -124,17 +153,20 @@ public class ChatRoom extends Application{
 			catch (Exception ex) {
 				chats.appendText("Message could not be delivered at this time...\n");
 				ex.printStackTrace();
-			}
-			
-		}); 
+			}	
+		});
+
+		HBox.setHgrow(userIn, Priority.ALWAYS);
+		HBox.setHgrow(sendButton, Priority.NEVER);
 		
-		//userIn.setOnAction(ev -> sendMessage(userIn));
-			
-		//Formatting JFx
-		chats.setPrefHeight(600);		
-		VBox rootPanel = new VBox(20, chats, userIn);
-		rootPanel.setPrefSize(600,600);
-		return rootPanel;	
+		inputPane.setAlignment(Pos.BOTTOM_RIGHT);
+		inputPane.setSpacing(10);
+		inputPane.setPadding(new Insets(10));
+		inputPane.getChildren().addAll(userIn, sendButton);
+		
+		chatWindow.setPrefSize(500,500);
+		
+		return chatWindow;
 	}
 	
 	//Event handler for sending message
@@ -207,7 +239,7 @@ public class ChatRoom extends Application{
 		
 		connection.open();
 		
-		stage.setScene(new Scene(create()));
+		stage.setScene(new Scene(createChat()));
 		
 		if(isServer) {
 			stage.setTitle(username + " (Server IP: " + ip + ")");
