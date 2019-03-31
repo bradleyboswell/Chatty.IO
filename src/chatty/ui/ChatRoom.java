@@ -2,6 +2,11 @@ package chatty.ui;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Date;
+
 import chatty.client.NewClient;
 import chatty.server.Connection;
 import chatty.server.NewServer;
@@ -114,17 +119,36 @@ public class ChatRoom extends Application{
 		HBox inputPane = new HBox();
 		VBox chatWindow = new VBox(10, chats, inputPane);
 		
+    	DateFormat timeFormat = new SimpleDateFormat("hh:mm"); // 12 hour time format
+    	String time = timeFormat.format(new Date()).toString();
+		
 		TextField userIn = new TextField(); // input for chat
-
+		Button sendButton = new Button("Send");
+    	
 		chats.setEditable(false);
 		chats.setPrefHeight(500);
 		chats.setFocusTraversable(false);
 
-		Button sendButton = new Button("Send");
+		String joined = time + " " + username + " has joined the chat.";
 		
+		if(isServer == false) {
+			try {
+				Thread.sleep(10);
+				chats.appendText(joined + "\n");
+				connection.send(joined);
+			}
+			catch (Exception ex) {
+				chats.appendText("You were unable to join the chat...\n");
+				ex.printStackTrace();
+			}
+		}
+		else {
+			chats.appendText(time + " Server: " + username + " has been created.\n");
+		}
+
 		sendButton.setOnAction(new EventHandler<ActionEvent>() { // send message to server using button
 			public void handle(ActionEvent e) {
-				String message = username + ": ";
+				String message = time + " " + username + ": ";
 				message += userIn.getText();
 				userIn.clear();
 				
@@ -141,7 +165,7 @@ public class ChatRoom extends Application{
 		});
 		
 		userIn.setOnAction(ev -> { // send message to server using keyboard
-			String message = username + ": ";
+			String message = time + " " + username + ": ";
 			message += userIn.getText();
 			userIn.clear();
 			
