@@ -1,76 +1,152 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Chatty.io</title>
-        <link href="/css/index.css" rel="stylesheet" type="text/css"/>
-    </head>
-    <body>
-        <div id="Title">
-            <h1>Chatty.IO</h1>
+
+<head>
+    <title>Chatty.io</title>
+    <link href="/css/index.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <div id="Title">
+        <h1>Chatty.IO</h1>
+    </div>
+    <div id="chatroom" style="display: none;">
+        <input type="submit" id="leave_chatroom" value="Leave Room" />
+        <div id="chatroomname"> blah </div>
+        <div id="log_container">
+            <div id="chatlog"></div>
         </div>
-        <div id ="chatroom" style="display: none;">
-            <div id="log_container">    
-                <div id="chatlog"></div>
-            </div>    
-            <form id="chat">
-                <input type="text" id="msg_text"  autocomplete="off" placeholder="Type your message here..."/>
-                <span><input type="submit" id="msg_btn" value="Send" /></span>
-             </form>
+        <form id="chat">
+            <input type="text" id="msg_text" autocomplete="off" placeholder="Type your message here..." />
+            <span><input type="submit" id="msg_btn" value="Send" /></span>
+        </form>
+        
+    </div>
+    <div id="selectChatroom">
+        <select name="chatroom_list" id="crl">
+        </select>
+        <input type="submit" id="join_room" value="join" />
+        <input type="submit" id="refresh_roomlist" value="refresh" />
+        <form id="creating" class="ignore-css">
+            <input type="text" id="new_room_name" autocomplete="off" placeholder="Enter Room Name..." />
+            <span><input type="submit" id="create_room" value="Create New Room" /></span>
+        </form>
+    </div>
+
+    <div id="room_already_exists" style="display: none;">
+        <p>The room with that name already exists</p>
+    </div>
+    <div id="createUsername" style="display: none;">
+        <form id="username">
+            <input type="text" id="username_text" autocomplete="off" placeholder="Please enter a username..." />
+            <span><input type="submit" id="username_submit" value="Submit" /></span>
+        </form>
+        <div id="error" style="display: none;">
+            <p>Please enter a username!</p>
         </div>
-        <div id ="createUsername">
-            <form id ="username">
-                <input type="text" id="username_text" autocomplete="off" placeholder="Please enter a username..."/>
-                <span><input type="submit" id="username_submit" value ="Submit"/></span>
-            </form>
-            <div id="error" style="display: none;">
-                <p>Please enter a username!</p>
-            </div>
-        </div>
+
+
         <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script> <!-- imports -->
         <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-        <script type="text/javascript">  
-           
-           let socket = io.connect();
-           
-            $("form#username").submit(function(e){
-                e.preventDefault();
-                if($(this).find("#username_text").val() == ""){
-                    $("#error").show();     //show error message
-                }else{
-                    //send client username to server and show chatroom
-                    socket.emit("send uName", $(this).find("#username_text").val(),function(){
-                        $("#createUsername").hide();    
-                        $("#chatroom").show();
+        <script type="text/javascript">
+            let socket = io.connect();
+            let rooms_list;
+            let current_room;
+            function getrooms() {
+                socket.emit("get rooms", function (rooms) {
+                    rooms_list = rooms;
+
+                    for (let j = 0; j < $("#chatroom_list").length; j++) {
+                        document.getElementById("#chatroom_list").remove(j);
+                    }
+                    for (let i = 0; i < rooms_list.length; i++) {
+                        var option = rooms_list[i];
+                        var select = document.getElementById("#chatroom_list");
+                        var addoption = document.createElement("option");
+                        addoption.text = option;
+                        select.add(addoption);
+                    }
+
                 });
             }
-            });         
+            getrooms();
+            $("creating#refresh_roomlist").submit(getrooms());
 
-            //user clicked the send button to send a message event
-            $("form#chat").submit(function(e){
-                e.preventDefault();    //Prevents form from doing its own action without user
+            $("creating#leave_chatroom").submit(function (e) {
+                e.preventDefault();
+                $("#selectChatroom").show();
+                $("#chatroom").hide();
+            })
 
-                if($(this).find("#msg_text").val()==""){
-                    return
-                }else{
-                    //use the socket.io event emitter to handle message sending. send message is sent the server event, arg1 is passing the sent message to the emitter, and the function callback clears the text field
-                    socket.emit("send message", $(this).find("#msg_text").val(),function(){
-                        $("form#chat #msg_text").val("");       
+            $("form#creating").submit(function (e) {
+                e.preventDefault();
+                socket.emit("create room", $(this).find("#new_room_name"), function (k) {
+                    if (k == -1) {
+                        $("#room_already_exists").show();
+                        $("#new_room_name").val() == "";
+                    }
+                    else {
+                        $("#new_room_name").val() == "";
+                        $("#selectChatroom").hide();
+                        $("#createUsername").show();
+                    }
+                })
+            });
+
+            $("creating#join_room").submit(function (e) {
+                e.preventDefault();
+                var selected = $(this).find("crl").children("option:selected").val()
+                if (selected == -1) {
+                    $("#noselectionerror").show();
+                }
+                else {
+                    socket.emit("enter room", selected, function () {
+                        $("#selectChatroom").hide();
+                        $("#createUsername").show();
                     });
                 }
             });
-            
-            socket.on("update messages", function(msg){ //On event "update message", append the chatlog with the message msg
+
+            $("form#username").submit(function (e) {
+                e.preventDefault();
+                if ($(this).find("#username_text").val() == "") {
+                    $("#error").show();     //show error message
+                } else {
+                    //send client username to server and show chatroom
+                    socket.emit("send uName", $(this).find("#username_text").val(), function () {
+                        $("#createUsername").hide();
+                        $("#chatroom").show();
+                    });
+                }
+            });
+
+            //user clicked the send button to send a message event
+            $("form#chat").submit(function (e) {
+                e.preventDefault();    //Prevents form from doing its own action without user
+
+                if ($(this).find("#msg_text").val() == "") {
+                    return
+                } else {
+                    //use the socket.io event emitter to handle message sending. send message is sent the server event, arg1 is passing the sent message to the emitter, and the function callback clears the text field
+                    socket.emit("send message", $(this).find("#msg_text").val(), function () {
+                        $("form#chat #msg_text").val("");
+                    });
+                }
+            });
+
+            socket.on("update messages", function (msg) { //On event "update message", append the chatlog with the message msg
                 let prev = "<p>" + msg + "</p>";
-                $("#chatlog").append(prev);     
-                keepScroll();     
+                $("#chatlog").append(prev);
+                keepScroll();
             });
 
             //helper function to keep the chatroom scrolled to the bottom at all times.
-            function keepScroll(){
+            function keepScroll() {
                 let scroll = $("#chatlog");
                 scroll.scrollTop($("#chatlog")[0].scrollHeight);
             }
 
         </script>
-    </body>
+</body>
+
 </html>
